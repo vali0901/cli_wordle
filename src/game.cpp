@@ -44,10 +44,10 @@ void Game::testTrie() {
 }
 
 void Game::startGame() {
+    wort->init(trie);
     std::string word = this->trie.getRandom();
     sol.setWord(word);
     std::cout << "The Game has started, guess the word\n";
-    // std::cout << "The word is " << word << "\n";
     std::string guess;
     int nr_guesses = 0;
     while (nr_guesses < 5) {
@@ -57,6 +57,10 @@ void Game::startGame() {
             std::cout << word << ", ";
 
         std::cout << "\n";
+    //std::cout << "The word is " << word << "\n";
+
+
+        //std::cout << "Nr words is trie:" << trie.count() << "\n";
 
         do {
             std::cin >> guess;
@@ -65,7 +69,7 @@ void Game::startGame() {
             else
                 break;
         } while(1);
-        
+
         bool found = sol.guess(guess);
         std::cout << guess << "\t" << sol.getPattern() << "\t" << "Remaining guesses: " << 5 - nr_guesses - 1 << "\n";
         
@@ -73,6 +77,8 @@ void Game::startGame() {
             std::cout << "Congratulations, you guessed the word!\n";
             return;
         }
+
+        wort->guess(guess, sol.getPattern());
         nr_guesses++;
     }
 

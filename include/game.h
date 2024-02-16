@@ -16,11 +16,14 @@ class Game{
             public:
                 Wort(Trie &trie, Solution &sol);
                 std::vector<std::string> suggest();
+                void updateTrie(std::vector<char> gray, std::vector<std::pair<char, int>> yellow, std::vector<std::pair<char, int>> green);
+                void guess(std::string guess, std::string pattern);
+                void init(Trie &trie);
             private:
-                Trie &trie;
+                Trie trie;
                 Solution &sol;
                 bool suggestHelper(TrieNode *node, int depth, std::string &result);
-                
+                void updateTrieHelper(TrieNode *node, int depth, std::vector<char> gray, std::vector<std::pair<char, int>> yellow, std::vector<std::pair<char, int>> green);
 
         };
 
