@@ -29,32 +29,6 @@ TrieNode* Trie::getRoot() {
     return this->root;
 }
 
-void Trie::remove(TrieNode* currNode) {
-    if (currNode->isEnd) {
-    std::cout << "removing " << currNode->c << "\n";
-
-    std::cout << "done removing " << currNode->c << "\n";
-
-        delete currNode;
-
-        return;
-    }
-    std::cout << "removing " << currNode->c << "\n";
-
-    for (int i = 0; i < 26; i++) {
-        // if(currNode->c == 'd')
-        //     std::cout << "rmvmmvmmv " << currNode->children[i]->c << "\n";
-            
-        if (currNode->children[i] != NULL) {
-            remove(currNode->children[i]);
-        }
-    }
-
-    std::cout << "done removing " << currNode->c << "\n";
-
-    delete currNode;
-}
-
 void Trie::insert(std::string word) {
     TrieNode* node = this->root;
     for (auto &c : word) {
@@ -86,20 +60,8 @@ std::string Trie::getRandom() {
 }
 
 void Trie::getRandomHelper(TrieNode* currNode, int depth, std::string &result) {
-    //std::cout << "depth " << depth << " currNode " << currNode->c << "\n";
-    if(depth == 5 && currNode->isEnd) {
+    if(depth == 5 && currNode->isEnd)
         return;
-    }
-
-    if(depth > 5) {
-        std::cout << "depth" << depth << "\n";
-        
-    }
-
-    if(currNode->nrChildren == 0) {
-        std::cout << "no children\n";
-        this->print();
-    }
 
     int index;
     do {
@@ -128,24 +90,6 @@ void Trie::printHelper(TrieNode* currNode, std::string &word, int depth = 0) {
             word += currNode->children[i]->c;
             printHelper(currNode->children[i], word, depth + 1);
             word.pop_back();
-        }
-    }
-}
-
-int Trie::count() {
-    int counter = 0;
-    countHelper(this->root, counter);
-    return counter;
-}
-
-void Trie::countHelper(TrieNode* currNode, int &counter) {
-    if (currNode->isEnd) {
-        counter++;
-    }
-
-    for (int i = 0; i < 26; i++) {
-        if (currNode->children[i] != NULL) {
-            countHelper(currNode->children[i], counter);
         }
     }
 }

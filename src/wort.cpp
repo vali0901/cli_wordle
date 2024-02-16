@@ -1,13 +1,46 @@
 #include "../include/game.h"
 #include <string>
 #include <iostream>
+#include <string.h>
 
-Game::Wort::Wort(Trie &trie, Solution &sol) : sol(sol) {
-    this->trie = trie;
+
+Game::Wort::Wort() {
+    suggestions = std::vector<std::string>(3, "");
+    firstSuggestions = true;
+    for(auto &d : charDiscoveryMap)
+        d = DiscoveryLevel::NOT_DISCOVERED;
 }
 
 void Game::Wort::init(Trie &trie) {
     this->trie = trie;
+    suggestions = std::vector<std::string>(3, "");
+    firstSuggestions = true;
+    for(auto &d : charDiscoveryMap)
+        d = DiscoveryLevel::NOT_DISCOVERED;
+}
+
+float Game::Wort::computeScore(std::string word) {
+    float score = 0;
+    int freqMap[26];
+
+    memset(freqMap, 0, 26 * sizeof(int));
+    
+    for(auto &c : word) {
+        freqMap[c - 'a']++;
+        switch (charDiscoveryMap[c - 'a'])
+        {
+        case DiscoveryLevel::NOT_DISCOVERED:
+            score += (freqMap[c - 'a'] == 1 ? 1 : 0) * prices[c - 'a'];
+            break;
+        case DiscoveryLevel::YELLOW:
+            score += 5 / freqMap[c - 'a'] * prices[c - 'a'];
+            break;
+
+        default:
+            break;
+        }
+    }
+    return score;
 }
 
 void Game::Wort::guess(std::string guess, std::string pattern) {
@@ -28,54 +61,53 @@ void Game::Wort::guess(std::string guess, std::string pattern) {
 
             if(!sw)
                 gray.push_back(guess[i]);
+
+            // if this letter is not yellow, mark it as discovered
+            if(charDiscoveryMap[guess[i] - 'a'] != DiscoveryLevel::YELLOW)
+                charDiscoveryMap[guess[i] - 'a'] = DiscoveryLevel::DISCOVERED;
         }
-        else if(pattern[i] >= 'a' && pattern[i] <= 'z') 
+        else if(pattern[i] >= 'a' && pattern[i] <= 'z')  {
             yellow.push_back({guess[i], i});
-        else if(pattern[i] >= 'A' && pattern[i] <= 'Z')
+            // if this letter has not been discovered yet (gray), mark it as yellow
+            if(charDiscoveryMap[guess[i] - 'a'] != DiscoveryLevel::DISCOVERED)
+                charDiscoveryMap[guess[i] - 'a'] = DiscoveryLevel::YELLOW;
+        }
+        else if(pattern[i] >= 'A' && pattern[i] <= 'Z') {
             green.push_back({guess[i], i});
+        }
     }
 
-    // for(auto &[c, d] : yellow) {
-    //     for(auto it = gray.begin(); it != gray.end(); it++) {
-    //         if(*it == c) {
-    //             gray.erase(it);
-    //             break;
-    //         }
-    //     }
-    // }
+    // init suggestions before updating them
+    for(auto &s : suggestions)
+        s = "";
+    memset(suggestionsScores, 0, 3 * sizeof(float));
 
-    for(auto c : gray)
-        std::cout << c << " ";
-    std::cout << "\n";
-    
-    for(auto &[c, d] : yellow)
-        std::cout << c << " " << d << " ";
-    std::cout << "\n";
-
-    
-    for(auto &[c, d] : green)
-        std::cout << c << " " << d << " ";
-    std::cout << "\n";
-
-
-    //std::cout << "done patterning\n";
-    updateTrieHelper(trie.getRoot(), 0, gray, yellow, green);
-    //std::cout << "done updating\n";
-    // cut down 0-children parents
-
-
+    updateTrieHelper(trie.getRoot(), 0, "", gray, yellow, green);
 }
 
 void Game::Wort::updateTrie(std::vector<char> gray, std::vector<std::pair<char, int>> yellow, std::vector<std::pair<char, int>> green) {
-    updateTrieHelper(trie.getRoot(), 0, gray, yellow, green);
+    updateTrieHelper(trie.getRoot(), 0, "", gray, yellow, green);
 }
 
-void Game::Wort::updateTrieHelper(TrieNode *node, int depth, std::vector<char> gray, std::vector<std::pair<char, int>> yellow, std::vector<std::pair<char, int>> green) {    
+void Game::Wort::updateTrieHelper(TrieNode *node, int depth, std::string currWord, std::vector<char> gray, std::vector<std::pair<char, int>> yellow, std::vector<std::pair<char, int>> green) {    
     if(depth == 5) {
         // evaluate
+        float score = computeScore(currWord);
+        for(int i = 0; i < 3; i++) {
+            if(score >= suggestionsScores[i]) {
+                for(int j = 2; j > i; j--) {
+                    suggestionsScores[j] = suggestionsScores[j - 1];
+                    suggestions[j] = suggestions[j - 1];
+                }
+                suggestionsScores[i] = score;
+                suggestions[i] = currWord;
+                break;
+            }
+        }
         return;
     }
 
+    // get letters for this depth
     std::vector<char> localGray;
     std::vector<char> localYellow;
     std::vector<char> localGreen;
@@ -98,6 +130,7 @@ void Game::Wort::updateTrieHelper(TrieNode *node, int depth, std::vector<char> g
            localGray.push_back(c);
     }
 
+    // update trie
     for(auto c : localGreen)
         for(int i = 0; i < 26; i++) {
             if(node->children[i] == NULL || node->children[i]->c == c)
@@ -117,11 +150,13 @@ void Game::Wort::updateTrieHelper(TrieNode *node, int depth, std::vector<char> g
         node->nrChildren--;
     }
 
-    for(auto n : node->children) {
+    // recursive call for children
+    for(auto n : node->children)
         if(n != NULL)
-            updateTrieHelper(n, depth + 1, gray, yellow, green);
-    }
+            updateTrieHelper(n, depth + 1, currWord + n->c, gray, yellow, green);
 
+
+    // cut 0-children nodes
     for(int i = 0; i < 26; i++) {
         if(node->children[i] == NULL)
             continue;
@@ -134,64 +169,12 @@ void Game::Wort::updateTrieHelper(TrieNode *node, int depth, std::vector<char> g
 }
 
 std::vector<std::string> Game::Wort::suggest() {
-    std::vector<std::string> result;
-    //std::cout << trie.getRoot()->nrChildren << ":";
-    //trie.print();
-    // for(auto c : trie.getRoot()->children) {
-    //     if(c != NULL)
-    //         std::cout << c->c << " ";
-    // }
-    //std::cout << "\n";
-    for(auto _ = 0; _ < 3; _++) {
-        //std::cout << "suggesting\n";
-        std::string suggestion = trie.getRandom();
-        result.push_back(suggestion);
-    }
+    if(!firstSuggestions)
+        return suggestions;
 
-    return result;
+    firstSuggestions = false;
+    for(auto i = 0; i < 3; i++)
+        suggestions[i] = trie.getRandom();
 
-}
-
-// std::vector<std::string> Game::Wort::suggest() {
-//     std::vector<std::string> result;
-//     for(auto _ = 0; _ < 3; _++) {
-//         std::string suggestion;
-//         bool sw = suggestHelper(trie.getRoot(), 0, suggestion);
-//         if(!sw)
-//             break;
-//         result.push_back(suggestion);
-//     }
-//     return result;
-// }
-
-bool Game::Wort::suggestHelper(TrieNode *node, int depth, std::string &result) {
-    if(depth == 5 && node->isEnd) {
-        return true;
-    }
-
-    bool sw = true;
-
-    int nr_tries = 0;
-
-    while(nr_tries < 26) {
-        int poolIndex;
-        int trieIndex;
-        int counter = 0;
-        do {
-            poolIndex = rand() % sol.getPool()[depth].size();
-            trieIndex = sol.getPool()[depth][poolIndex] - 'a';
-            counter++;
-            if(counter > 26)
-                return false;
-        } while(node->children[trieIndex] == NULL);
-
-        result += node->children[trieIndex]->c;
-        sw = suggestHelper(node->children[trieIndex], depth + 1, result);
-        if(sw)
-            return true;
-        result.pop_back();
-        nr_tries++;
-    }
-
-    return false;
+    return suggestions;
 }
