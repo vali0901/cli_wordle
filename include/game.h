@@ -49,6 +49,9 @@ class Game{
         Wort *wort;
 
         bool match(std::string guess, std::string pattern);
+        void gamemode1();
+        void gamemode2();
+        void gamemode3();
 
         Game();
         Game(const Game &other) = delete;
