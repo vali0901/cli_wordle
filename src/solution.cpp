@@ -13,6 +13,7 @@ std::string Solution::getPattern() {
 
 void Solution::setWord(std::string word) {
     this->word = word;
+    memset(matchingLetters.data(), 0, 26);
     for(auto &c : word) {
         matchingLetters[c - 'a']++;
     }

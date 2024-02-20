@@ -132,7 +132,7 @@ void Game::gamemode1()
 
         found = sol.guess(guess);
         std::cout << guess << "\t" << sol.getPattern() << "\t"
-                  << "Remaining guesses: " << 5 - nr_guesses - 1 << "\n";
+                  << "Remaining guesses: " << 6 - nr_guesses - 1 << "\n";
 
         if (found)
         {
@@ -179,7 +179,7 @@ void Game::gamemode2()
 
         found = sol.guess(guess);
         std::cout << guess << "\t" << sol.getPattern() << "\t"
-                  << "Remaining guesses: " << 5 - nr_guesses - 1 << "\n";
+                  << "Remaining guesses: " << 6 - nr_guesses - 1 << "\n";
 
         if (found)
         {
