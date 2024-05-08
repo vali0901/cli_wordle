@@ -5,7 +5,7 @@
 #define DICTIONARY "words.txt"
 
 int main() {
-    Game *game = Game::getInstance();   
+    Game *game = Game::getInstance();
 
     game->populateTrie(DICTIONARY);
     game->startGame();
